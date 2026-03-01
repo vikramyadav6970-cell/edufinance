@@ -1,4 +1,4 @@
-
+ 
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,10 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Sparkles, Terminal } from 'lucide-react';
-import {
-  getSavingsSuggestions,
-  type Suggestion,
-} from '@/ai/flows/ai-savings-suggestions';
+import type { Suggestion } from '@/ai/flows/ai-savings-suggestions';
 import { tips as knownTips } from '@/lib/data';
 import { AddGoalDialog } from '@/components/goals/add-goal-dialog';
 import type { Expense, Goal } from '@/lib/types';
@@ -118,10 +115,22 @@ export default function SavingsPage() {
     setError(null);
     setSuggestions([]);
     try {
-      const result = await getSavingsSuggestions({
-        spendingData: JSON.stringify(expenses),
-        knownTips: JSON.stringify(knownTips.map(t => t.text)),
+      const response = await fetch('/api/ai/savings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          spendingData: JSON.stringify(expenses),
+          knownTips: JSON.stringify(knownTips.map(t => t.text)),
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate suggestions');
+      }
+
+      const result = await response.json();
       setSuggestions(result.suggestions);
     } catch (err) {
       setError('Failed to generate suggestions. Please try again.');

@@ -11,7 +11,7 @@ import { Bot, Loader2, Send, User as UserIcon, Wallet, Target, IndianRupee } fro
 import { useUser } from '@/firebase';
 import type { Expense, Goal } from '@/lib/types';
 import { getExpenses, getBudget, getGoals } from '@/services/firestore';
-import { getFinancialAdvice, FinancialAdviceInput } from '@/ai/flows/ai-advisor-flow';
+import type { FinancialAdviceInput } from '@/ai/flows/ai-advisor-flow';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -88,10 +88,22 @@ export default function AdvisorPage() {
         setLoading(true);
 
         try {
-            const advice = await getFinancialAdvice({
-                question: input,
-                ...financialContext,
+            const response = await fetch('/api/ai/advisor', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    question: input,
+                    ...financialContext,
+                }),
             });
+
+            if (!response.ok) {
+                throw new Error('Failed to get advice');
+            }
+
+            const advice = await response.json();
             const assistantMessage: Message = { role: 'assistant', content: advice.response };
             setMessages(prev => [...prev, assistantMessage]);
         } catch (error) {
